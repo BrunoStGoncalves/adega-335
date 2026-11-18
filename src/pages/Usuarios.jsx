@@ -21,7 +21,11 @@ export default function Usuarios() {
   async function cadastrar(e) {
     e.preventDefault()
     const usuario = novo.usuario.trim().toLowerCase()
-    if (!novo.nome.trim() || !/^[a-z0-9._-]{3,}$/.test(usuario)) return mostrar('Informe o nome e um usuário com 3+ letras/números, sem espaços.')
+    const ehEmail = usuario.includes('@')
+    if (!novo.nome.trim()) return mostrar('Informe o nome do funcionário.')
+    if (ehEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(usuario)) return mostrar('E-mail inválido. Confira se digitou certo.')
+    if (!ehEmail && !/^[a-z0-9._-]{3,}$/.test(usuario)) return mostrar('Use um e-mail ou um usuário com 3+ letras/números, sem espaços.')
+    if (lista.some((u) => u.usuario === usuario)) return mostrar('Esse login já está em uso.')
     if (novo.senha.length < 6) return mostrar('A senha precisa ter pelo menos 6 caracteres.')
     try {
       const { data, error } = await clienteCadastro.auth.signUp({
@@ -31,7 +35,7 @@ export default function Usuarios() {
       if (!data.user?.id) throw new Error('Não foi possível criar o usuário.')
       await rpc('configurar_usuario', { p_id: data.user.id, p_nome: novo.nome.trim(), p_papel: novo.papel, p_ativo: true })
       await clienteCadastro.auth.signOut()
-      mostrar(`${novo.nome} cadastrado. Login: ${usuario}`)
+      mostrar(`${novo.nome} cadastrado. Login: ${usuario} (a senha é a que você definiu)`)
       setNovo({ nome: '', usuario: '', senha: '', papel: 'operador' }); carregar()
     } catch (err) { mostrar(mensagemErro(err)) }
   }
@@ -53,15 +57,15 @@ export default function Usuarios() {
         <h2>Cadastrar funcionário</h2>
         <div className="form">
           <label>Nome<input value={novo.nome} onChange={(e) => setNovo({ ...novo, nome: e.target.value })} /></label>
-          <label>Usuário (login)<input value={novo.usuario} onChange={(e) => setNovo({ ...novo, usuario: e.target.value })} placeholder="ex.: juliana" /></label>
-          <label>Senha inicial<input type="password" value={novo.senha} onChange={(e) => setNovo({ ...novo, senha: e.target.value })} /></label>
+          <label>E-mail ou usuário (login)<input value={novo.usuario} onChange={(e) => setNovo({ ...novo, usuario: e.target.value })} placeholder="ex.: camila@gmail.com ou camila" autoComplete="off" /></label>
+          <label>Senha inicial (mín. 6)<input type="password" autoComplete="new-password" value={novo.senha} onChange={(e) => setNovo({ ...novo, senha: e.target.value })} /></label>
           <label>Perfil<select value={novo.papel} onChange={(e) => setNovo({ ...novo, papel: e.target.value })}><option value="operador">Operador de caixa</option><option value="dono">Proprietário</option></select></label>
           <button className="btn grande verde largo">Cadastrar</button>
         </div>
       </form>
       <div className="card rolagem">
         <table className="tabela">
-          <thead><tr><th>Nome</th><th>Usuário</th><th>Perfil</th><th>Status</th><th></th></tr></thead>
+          <thead><tr><th>Nome</th><th>Login</th><th>Perfil</th><th>Status</th><th></th></tr></thead>
           <tbody>{lista.map((u) => {
             const eu = u.id === perfil.id
             return (
