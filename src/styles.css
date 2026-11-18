@@ -47,8 +47,9 @@ label.check input { width: auto; }
 .btn.perigo { color: var(--perigo); }
 .btn.perigo-cheio { background: var(--perigo); color: #fff; }
 
-.app { display: flex; min-height: 100%; }
-.menu { background: var(--grafite); color: #E9E7E1; width: 230px; flex: none; display: flex; flex-direction: column; gap: 4px; padding: 20px 14px; }
+.app { display: flex; min-height: 100%; align-items: flex-start; }
+/* Menu fixo: sempre visível, com usuário e botão Sair no rodapé */
+.menu { background: var(--grafite); color: #E9E7E1; width: 230px; flex: none; display: flex; flex-direction: column; gap: 4px; padding: 20px 14px; position: sticky; top: 0; height: 100vh; height: 100dvh; overflow-y: auto; }
 .marca { font: 700 26px var(--titulo); padding: 4px 10px 0; color: #fff; }
 .marca span { color: var(--dourado); }
 .sub-marca { font-size: 13px; color: #A9ADB0; padding: 0 10px 16px; }
@@ -127,7 +128,9 @@ label.check input { width: auto; }
 
 @media (max-width: 900px) {
   .app { flex-direction: column; }
-  .menu { width: auto; flex-direction: row; flex-wrap: wrap; }
+  .app { align-items: stretch; }
+  .menu { width: auto; height: auto; flex-direction: row; flex-wrap: wrap; z-index: 5; }
+  .menu a { padding: 10px 12px; }
   .marca, .sub-marca { width: 100%; }
   .quem { margin-top: 0; width: 100%; flex-direction: row; justify-content: space-between; align-items: center; }
   .pdv { grid-template-columns: 1fr; }
