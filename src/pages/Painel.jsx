@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { rpc } from '../supabase.js'
-import { brl, pct, periodo, FORMAS, mensagemErro } from '../lib/formato.js'
+import { brl, pct, periodo, FORMAS_RECEBER, mensagemErro } from '../lib/formato.js'
 import { Periodo } from './MinhasVendas.jsx'
 
 export default function Painel() {
@@ -33,6 +33,8 @@ export default function Painel() {
         <div className="card kpi"><span>Faturamento no período</span><b>{brl(fat)}</b></div>
         <div className="card kpi"><span>Lucro bruto no período</span><b>{brl(d.lucro_bruto)}</b><small>Margem {pct(fat ? d.lucro_bruto / fat : NaN)}</small></div>
         <div className="card kpi"><span>Vendas</span><b>{d.qtd_vendas}</b><small>Ticket médio {brl(d.ticket_medio)}</small></div>
+        <div className="card kpi"><span>Fiado a receber</span><b>{brl(d.fiado_aberto.total)}</b><small>{d.fiado_aberto.qtd} fiado(s) em aberto</small></div>
+        <div className="card kpi"><span>Fiado dono (consumo)</span><b>{brl(d.consumo_dono.custo)}</b><small>a custo · {d.consumo_dono.qtd} retirada(s) no período</small></div>
         <div className="card kpi"><span>Investido em estoque</span><b>{brl(d.estoque_investido)}</b><small>Vale {brl(d.estoque_valor_venda)} na venda</small></div>
       </div>
 
@@ -66,7 +68,7 @@ export default function Painel() {
         <div className="card">
           <h2>Formas de pagamento</h2>
           <table className="tabela"><tbody>
-            {Object.entries(FORMAS).map(([k, l]) => <tr key={k}><td>{l}</td><td>{brl(d.por_forma[k] || 0)}</td><td>{pct(fat ? (d.por_forma[k] || 0) / fat : NaN)}</td></tr>)}
+            {Object.entries({ ...FORMAS_RECEBER, fiado_cliente: 'Fiado cliente' }).map(([k, l]) => <tr key={k}><td>{l}</td><td>{brl(d.por_forma[k] || 0)}</td><td>{pct(fat ? (d.por_forma[k] || 0) / fat : NaN)}</td></tr>)}
           </tbody></table>
         </div>
         <div className="card">
