@@ -31,7 +31,7 @@ code { background: var(--chip); padding: 2px 6px; border-radius: 6px; }
 .alerta { background: var(--perigo-claro); color: var(--perigo); border-radius: 10px; padding: 10px 12px; font-weight: 700; margin-bottom: 12px; }
 
 label { display: flex; flex-direction: column; gap: 6px; font-weight: 700; font-size: 14px; }
-input, select { font-weight: 400; font-size: 17px; padding: 11px 12px; border: 1px solid var(--linha); border-radius: 10px; background: #fff; width: 100%; }
+input, select, textarea { font-weight: 400; font-size: 17px; padding: 11px 12px; border: 1px solid var(--linha); border-radius: 10px; background: #fff; width: 100%; }
 label.check { flex-direction: row; align-items: center; gap: 8px; font-weight: 600; }
 label.check input { width: auto; }
 .form { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; align-items: end; }
@@ -138,3 +138,7 @@ label.check input { width: auto; }
   .conteudo { padding: 16px; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+textarea { font: inherit; font-size: 17px; padding: 11px 12px; border: 1px solid var(--linha); border-radius: 10px; background: #fff; width: 100%; resize: vertical; }
+.fiado { display: flex; flex-direction: column; gap: 10px; background: #FFF6D9; border: 1px solid var(--dourado); border-radius: 12px; padding: 12px; }
+.formas button { flex: 1 1 30%; }
