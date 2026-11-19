@@ -8,10 +8,11 @@ import Produtos from './pages/Produtos.jsx'
 import Estoque from './pages/Estoque.jsx'
 import Caixas from './pages/Caixas.jsx'
 import Usuarios from './pages/Usuarios.jsx'
+import Fiados from './pages/Fiados.jsx'
 
 const MENU = {
-  dono: [['/painel', 'Painel'], ['/caixa', 'Caixa (PDV)'], ['/produtos', 'Produtos'], ['/estoque', 'Estoque'], ['/caixas', 'Caixas'], ['/usuarios', 'Usuários']],
-  operador: [['/caixa', 'Caixa'], ['/minhas-vendas', 'Minhas vendas']],
+  dono: [['/painel', 'Painel'], ['/caixa', 'Caixa (PDV)'], ['/fiados', 'Fiados'], ['/produtos', 'Produtos'], ['/estoque', 'Estoque'], ['/caixas', 'Caixas'], ['/usuarios', 'Usuários']],
+  operador: [['/caixa', 'Caixa'], ['/fiados', 'Fiados'], ['/minhas-vendas', 'Minhas vendas']],
 }
 const INICIO = { dono: '/painel', operador: '/caixa' }
 
@@ -53,6 +54,7 @@ export default function App() {
       <Route element={<Protegida />}>
         <Route element={<Layout />}>
           <Route path="/caixa" element={<PDV />} />
+          <Route path="/fiados" element={<Fiados />} />
           <Route element={<Protegida papeis={['operador']} />}>
             <Route path="/minhas-vendas" element={<MinhasVendas />} />
           </Route>
