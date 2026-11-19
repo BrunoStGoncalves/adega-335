@@ -3,11 +3,14 @@ import { rpc } from '../supabase.js'
 import { brl, lerValor, FORMAS, mensagemErro, dataHora } from '../lib/formato.js'
 import { adicionar, alterarQuantidade, remover, subtotal, total, troco, buscarPorCodigo } from '../lib/carrinho.js'
 import { useToast, Toast } from './comum.jsx'
+import { useAuth } from '../auth.jsx'
+import { abrirGaveta, conectar, lerConfig, salvarConfig, suportado } from '../lib/gaveta.js'
 
 export default function PDV() {
   const [caixaId, setCaixaId] = useState(undefined)
   const [aba, setAba] = useState('vender')
   const [toast, mostrar] = useToast()
+  const { ehDono } = useAuth()
 
   const carregarCaixa = useCallback(async () => {
     try { setCaixaId(await rpc('meu_caixa_aberto')) } catch (e) { mostrar(mensagemErro(e)) }
@@ -22,13 +25,14 @@ export default function PDV() {
       <div className="topo">
         <div><h1>Caixa</h1><p className="sub">Caixa nº {caixaId} aberto</p></div>
         <div className="abas">
-          {[['vender', 'Vender'], ['movimento', 'Sangria / reforço'], ['fechar', 'Fechar caixa']].map(([k, l]) => (
+          {[['vender', 'Vender'], ['movimento', 'Sangria / reforço'], ['fechar', 'Fechar caixa'], ...(ehDono ? [['gaveta', 'Gaveta']] : [])].map(([k, l]) => (
             <button key={k} className={aba === k ? 'ativa' : ''} onClick={() => setAba(k)}>{l}</button>
           ))}
         </div>
       </div>
       {aba === 'vender' && <Vender mostrar={mostrar} />}
       {aba === 'movimento' && <Movimento mostrar={mostrar} />}
+      {aba === 'gaveta' && <ConfigGaveta mostrar={mostrar} />}
       {aba === 'fechar' && <Fechar mostrar={mostrar} aoFechar={() => { setAba('vender'); carregarCaixa() }} />}
       <Toast texto={toast} />
     </>
@@ -60,6 +64,8 @@ function Vender({ mostrar }) {
   const [cat, setCat] = useState('Todas')
   const [forma, setForma] = useState('dinheiro')
   const [recebido, setRecebido] = useState('')
+  const [cliente, setCliente] = useState('')
+  const [observacao, setObservacao] = useState('')
   const [enviando, setEnviando] = useState(false)
   const campo = useRef(null)
 
@@ -93,19 +99,26 @@ function Vender({ mostrar }) {
   const t = total(carrinho)
   const rec = lerValor(recebido)
   const tr = forma === 'dinheiro' ? troco(t, rec) : null
+  const fiado = forma === 'fiado_cliente' || forma === 'consumo_dono'
 
   async function finalizar() {
     if (!carrinho.length) return
     if (forma === 'dinheiro' && tr !== null && tr < 0) return mostrar('Valor recebido menor que o total.')
+    if (forma === 'fiado_cliente' && !cliente.trim()) return mostrar('Informe o nome do cliente do fiado.')
+    if (fiado && !observacao.trim()) return mostrar('Descreva o que foi levado nessa operação.')
     setEnviando(true)
     try {
       const r = await rpc('finalizar_venda', {
         p_itens: carrinho.map((i) => ({ produto_id: i.id, quantidade: i.quantidade })),
         p_forma: forma,
         p_valor_recebido: forma === 'dinheiro' && Number.isFinite(rec) ? rec : null,
+        p_cliente: forma === 'fiado_cliente' ? cliente.trim() : null,
+        p_observacao: fiado ? observacao.trim() : null,
       })
-      mostrar(`Venda nº ${r.venda_id} finalizada: ${brl(r.total)}${Number(r.troco) > 0 ? ' · troco ' + brl(r.troco) : ''}`)
-      setCarrinho([]); setRecebido(''); setForma('dinheiro')
+      if (forma === 'dinheiro') abrirGaveta()
+      const rotulo = forma === 'fiado_cliente' ? `Fiado de ${cliente.trim()} registrado` : forma === 'consumo_dono' ? 'Consumo do dono registrado' : `Venda nº ${r.venda_id} finalizada`
+      mostrar(`${rotulo}: ${brl(r.total)}${Number(r.troco) > 0 ? ' · troco ' + brl(r.troco) : ''}`)
+      setCarrinho([]); setRecebido(''); setCliente(''); setObservacao(''); setForma('dinheiro')
       carregar()
     } catch (e) { mostrar(mensagemErro(e)); carregar() } finally { setEnviando(false); focar() }
   }
@@ -149,13 +162,20 @@ function Vender({ mostrar }) {
         <div className="formas">
           {Object.entries(FORMAS).map(([k, l]) => <button key={k} className={forma === k ? 'ativa' : ''} onClick={() => setForma(k)}>{l}</button>)}
         </div>
+        {fiado && (
+          <div className="fiado">
+            <p className="mini">{forma === 'fiado_cliente' ? 'O cliente leva agora e paga depois. A dívida fica em Fiados.' : 'Produto retirado pelo dono: baixa o estoque, mas não conta como venda.'}</p>
+            {forma === 'fiado_cliente' && <label>Nome do cliente<input value={cliente} onChange={(e) => setCliente(e.target.value)} placeholder="Ex.: João da padaria" /></label>}
+            <label>Descrição da operação<textarea rows="3" value={observacao} onChange={(e) => setObservacao(e.target.value)} placeholder="O que foi levado e combinado" /></label>
+          </div>
+        )}
         {forma === 'dinheiro' && (
           <div className="troco">
             <label>Valor recebido<input inputMode="decimal" value={recebido} onChange={(e) => setRecebido(e.target.value)} placeholder="Ex.: 100" /></label>
             <div><div className="mini">Troco</div><div className={tr !== null && tr < 0 ? 'valor perigo' : 'valor ok'}>{tr === null ? '—' : tr < 0 ? 'Falta ' + brl(-tr) : brl(tr)}</div></div>
           </div>
         )}
-        <button className="btn grande verde" disabled={!carrinho.length || enviando} onClick={finalizar}>{enviando ? 'Registrando…' : 'Finalizar venda'}</button>
+        <button className="btn grande verde" disabled={!carrinho.length || enviando} onClick={finalizar}>{enviando ? 'Registrando…' : fiado ? 'Registrar ' + FORMAS[forma].toLowerCase() : 'Finalizar venda'}</button>
       </aside>
     </div>
   )
@@ -198,6 +218,10 @@ export function ResumoCaixa({ r }) {
         <tr><td>Vendas em PIX</td><td>{brl(r.pix)}</td></tr>
         <tr><td>Vendas no crédito</td><td>{brl(r.credito)}</td></tr>
         <tr><td>Vendas no débito</td><td>{brl(r.debito)}</td></tr>
+        <tr><td>Fiado cliente (a receber)</td><td>{brl(r.fiado_cliente)}</td></tr>
+        <tr><td>Fiados recebidos em dinheiro</td><td>{brl(r.fiado_recebido_dinheiro)}</td></tr>
+        <tr><td>Fiados recebidos em PIX/cartão</td><td>{brl(r.fiado_recebido_outros)}</td></tr>
+        <tr><td>Fiado dono (consumo)</td><td>{brl(r.consumo_dono)}</td></tr>
         <tr><td>Sangrias</td><td>− {brl(r.sangrias)}</td></tr>
         <tr><td>Reforços</td><td>{brl(r.reforcos)}</td></tr>
         <tr><td><b>Dinheiro esperado na gaveta</b></td><td><b>{brl(r.valor_esperado)}</b></td></tr>
@@ -236,5 +260,32 @@ function Fechar({ mostrar, aoFechar }) {
       <label>Dinheiro contado na gaveta (R$)<input inputMode="decimal" value={contado} onChange={(e) => setContado(e.target.value)} /></label>
       <button className="btn grande verde">Fechar caixa</button>
     </form>
+  )
+}
+
+function ConfigGaveta({ mostrar }) {
+  const [cfg, setCfg] = useState(lerConfig())
+  const ok = suportado()
+  async function ligar() {
+    try { await conectar(); setCfg(lerConfig()); mostrar('Gaveta conectada neste computador') } catch (e) { mostrar(mensagemErro(e)) }
+  }
+  function desligar() { const c = { ...cfg, ativa: false }; salvarConfig(c); setCfg(c); mostrar('Abertura automática desligada') }
+  async function testar() { mostrar((await abrirGaveta()) ? 'Comando enviado para a gaveta' : 'A gaveta não respondeu. Confira a conexão.') }
+  return (
+    <div className="card estreito">
+      <h2>Gaveta de dinheiro</h2>
+      <p className="sub">Quando ativa, a gaveta abre sozinha ao finalizar uma venda em dinheiro.</p>
+      {!ok && <div className="alerta">Este navegador não acessa a gaveta. Use Google Chrome ou Microsoft Edge no computador do caixa.</div>}
+      <p>Situação neste computador: <b>{cfg.ativa ? 'ativa' : 'desligada'}</b></p>
+      <label>Velocidade da porta (baud)
+        <select value={cfg.baud} onChange={(e) => { const c = { ...cfg, baud: Number(e.target.value) }; salvarConfig(c); setCfg(c) }}>
+          {[9600, 19200, 38400, 115200].map((b) => <option key={b} value={b}>{b}</option>)}
+        </select>
+      </label>
+      <button className="btn grande" disabled={!ok} onClick={ligar}>Conectar gaveta</button>
+      <button className="btn grande claro" disabled={!cfg.ativa} onClick={testar}>Testar abertura</button>
+      {cfg.ativa && <button className="btn claro" onClick={desligar}>Desligar abertura automática</button>}
+      <p className="mini">Funciona com gavetas ligadas à impressora térmica ou a uma porta serial/USB-serial. O modelo exato muda a configuração: confira quando a gaveta chegar.</p>
+    </div>
   )
 }
