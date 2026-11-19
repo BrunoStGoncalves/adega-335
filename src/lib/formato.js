@@ -18,7 +18,10 @@ export const pct = (v) => (Number.isFinite(v) ? (v * 100).toFixed(1).replace('.'
 export const dataHora = (iso) =>
   new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
 
-export const FORMAS = { dinheiro: 'Dinheiro', pix: 'PIX', credito: 'Crédito', debito: 'Débito' }
+// Formas que recebem dinheiro na hora
+export const FORMAS_RECEBER = { dinheiro: 'Dinheiro', pix: 'PIX', credito: 'Crédito', debito: 'Débito' }
+// Todas as opções da tela de venda (fiado cliente = paga depois; fiado dono = consumo do dono)
+export const FORMAS = { ...FORMAS_RECEBER, fiado_cliente: 'Fiado cliente', consumo_dono: 'Fiado dono' }
 
 // Início do dia de hoje, de N dias atrás e do mês (horário local)
 export function periodo(tipo) {
