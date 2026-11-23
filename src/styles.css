@@ -116,7 +116,9 @@ label.check input { width: auto; }
 .tabela td.quebra { white-space: normal; min-width: 180px; }
 .tabela select { width: auto; padding: 6px 8px; font-size: 15px; }
 .tabela tr.inativo td { opacity: .5; }
-.acoes { display: flex; gap: 6px; }
+/* Botões da linha: a célula continua sendo célula de tabela, senão as linhas da grade quebram */
+.acoes { white-space: nowrap; text-align: right; }
+.acoes .btn + .btn { margin-left: 6px; }
 .pilula { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 13px; font-weight: 800; background: var(--chip); margin-left: 4px; }
 .pilula.ok { background: var(--verde-claro); color: var(--verde); }
 .pilula.perigo { background: var(--perigo-claro); color: var(--perigo); }
