@@ -30,7 +30,7 @@ export default function Produtos() {
   const custoDe = (p) => (p.eh_combo ? custoCombo(p.combo_itens || []) : Number(p.custo))
 
   const filtrada = lista.filter((p) => (inativos || p.ativo) && (!cat || p.categoria_id === Number(cat)) &&
-    (!busca || p.nome.toLowerCase().includes(busca.toLowerCase()) || (p.codigo_barras || '').includes(busca)))
+    (!busca || p.nome.toLowerCase().includes(busca.toLowerCase()) || (p.codigo_barras || '').includes(busca) || (p.codigo_interno || '').toLowerCase().includes(busca.toLowerCase())))
 
   async function excluir(p) {
     try {
@@ -65,7 +65,8 @@ export default function Produtos() {
               return (
                 <tr key={p.id} className={p.ativo ? '' : 'inativo'}>
                   <td><b>{p.nome}</b>{p.marca && <div className="mini">{p.marca}</div>}{p.eh_combo && <span className="pilula">Combo</span>}</td>
-                  <td>{p.categorias?.nome}</td><td>{p.codigo_barras || '—'}</td>
+                  <td>{p.categorias?.nome}</td>
+                  <td>{p.codigo_barras || p.codigo_interno ? <>{p.codigo_barras && <div>{p.codigo_barras}</div>}{p.codigo_interno && <div className="mini">Interno: {p.codigo_interno}</div>}</> : '—'}</td>
                   <td>{brl(c)}</td><td>{brl(p.preco)}</td><td>{pct(p.preco > 0 ? (p.preco - c) / p.preco : NaN)}</td>
                   <td>{p.eh_combo ? <span className="mini">usa os itens</span> : <span className={p.estoque <= p.estoque_minimo ? 'pilula perigo' : ''}>{p.estoque}</span>}</td>
                   <td className="acoes">
